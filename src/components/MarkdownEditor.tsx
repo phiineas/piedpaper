@@ -3,7 +3,7 @@
 import React, { useState, useRef, KeyboardEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw'; // Add this for HTML support (including <br>)
+import rehypeRaw from 'rehype-raw'; 
 
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
