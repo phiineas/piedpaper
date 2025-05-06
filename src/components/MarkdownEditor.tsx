@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, KeyboardEvent } from 'react';
+import React, { useState, useRef, KeyboardEvent, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw'; 
@@ -59,9 +59,24 @@ function middleOutCompression(input) {
 ~~Hooli sucks~~
 `;
 
-export default function MarkdownEditor() {
-  const [markdown, setMarkdown] = useState(initialMarkdown);
+interface MarkdownEditorProps {
+  initialContent: string;
+  onContentChange: (content: string) => void;
+}
+
+export default function MarkdownEditor({ initialContent, onContentChange }: MarkdownEditorProps) {
+  const [markdown, setMarkdown] = useState(initialContent);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // update internal state if initialContent prop changes
+  useEffect(() => {
+    setMarkdown(initialContent);
+  }, [initialContent]);
+
+  const handleMarkdownChange = (newMarkdown: string) => {
+    setMarkdown(newMarkdown);
+    onContentChange(newMarkdown); // call the callback prop
+  };
 
   // function to apply markdown syntax
   const applyMarkdownSyntax = (syntaxStart: string, syntaxEnd: string = syntaxStart) => {
@@ -77,7 +92,7 @@ export default function MarkdownEditor() {
     // if text is selected, wrap it
     if (selectedText) {
       const newText = `${textBefore}${syntaxStart}${selectedText}${syntaxEnd}${textAfter}`;
-      setMarkdown(newText);
+      handleMarkdownChange(newText);
       // restore selection after state update
       requestAnimationFrame(() => {
         textarea.selectionStart = start + syntaxStart.length;
@@ -86,7 +101,7 @@ export default function MarkdownEditor() {
       });
     } else {
       const newText = `${textBefore}${syntaxStart}${syntaxEnd}${textAfter}`;
-      setMarkdown(newText);
+      handleMarkdownChange(newText);
       // place cursor in the middle after state update
       requestAnimationFrame(() => {
         textarea.selectionStart = start + syntaxStart.length;
@@ -150,7 +165,7 @@ export default function MarkdownEditor() {
     const needsNewline = textBefore.length > 0 && !textBefore.endsWith('\n');
     const newText = `${textBefore}${needsNewline ? '\n' : ''}${insertText}${textAfter}`;
     
-    setMarkdown(newText);
+    handleMarkdownChange(newText); 
     
     // set cursor position after the inserted block
     const newPosition = start + insertText.length + (needsNewline ? 1 : 0);
@@ -472,7 +487,7 @@ export default function MarkdownEditor() {
                 ref={textareaRef}
                 className="w-full h-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-0 text-base font-mono"
                 value={markdown}
-                onChange={(e) => setMarkdown(e.target.value)}
+                onChange={(e) => handleMarkdownChange(e.target.value)} 
                 onKeyDown={handleKeyDown}
                 placeholder="ayoo!"
               />

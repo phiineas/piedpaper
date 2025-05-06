@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 import {
   Search,
@@ -21,53 +23,16 @@ import {
   Clock,
   X,
   GitBranch,
-  Code
+  Code,
+  Loader2
 } from 'lucide-react';
 
-// mock data
-const initialProjects = [
-  {
-    id: 'proj-1',
-    name: 'Team Documentation',
-    createdAt: '2025-04-15T10:30:00',
-    lastUpdated: '2025-04-29T14:22:00',
-    starred: true,
-    description: 'Central documentation for the team with onboarding guides and processes'
-  },
-  {
-    id: 'proj-2',
-    name: 'Product Roadmap',
-    createdAt: '2025-04-10T09:15:00',
-    lastUpdated: '2025-04-30T11:05:00',
-    starred: false,
-    description: 'Strategic planning document for our Q2 product development goals'
-  },
-  {
-    id: 'proj-3',
-    name: 'Meeting Notes',
-    createdAt: '2025-04-05T15:45:00',
-    lastUpdated: '2025-04-28T16:30:00',
-    starred: true,
-    description: 'Collection of weekly meeting notes and action items'
-  },
-  {
-    id: 'proj-4',
-    name: 'API Documentation',
-    createdAt: '2025-04-02T11:20:00',
-    lastUpdated: '2025-04-25T13:15:00',
-    starred: false,
-    description: 'Technical documentation for our REST API endpoints and usage examples'
-  }
-];
-
-// generate a unique project ID
-const generateProjectId = () => {
-  return `proj-${Math.random().toString(36).substring(2, 9)}`;
-};
+import { getProjects, createProject, updateProject, deleteProject } from '@/services/projectService';
+import { IProject } from '@/models/project';
 
 // format date to relative time
-const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
+const formatRelativeTime = (dateInput: string | Date) => {
+  const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
   
@@ -92,49 +57,129 @@ const formatRelativeTime = (dateString: string) => {
 };
 
 export default function HomePage() {
-  const [projects, setProjects] = useState(initialProjects);
+  const [projects, setProjects] = useState<IProject[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent'>('all');
   
   const router = useRouter();
 
-  // filter
-  const filteredProjects = projects.filter(project => 
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // fetch projects on component mount
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
-  const toggleStar = (id: string) => {
-    setProjects(projects.map(project => 
-      project.id === id ? { ...project, starred: !project.starred } : project
-    ));
+  // fetch projects from the API
+  async function fetchProjects() {
+    try {
+      setLoading(true);
+      const data = await getProjects();
+      setProjects(data);
+    } catch (error) {
+      console.error('error fetching projects-', error);
+      toast({
+        title: "error",
+        description: "failed to fetch projects. please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // filter
+  const filteredProjects = projects.filter(project => {
+    // search term filter
+    const matchesSearch = 
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      project.description.toLowerCase().includes(searchTerm.toLowerCase());
+      
+    // type filter
+    if (filterType === 'starred') {
+      return matchesSearch && project.starred;
+    } else if (filterType === 'recent') {
+      // recent projects (past week)
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return matchesSearch && new Date(project.lastUpdated) >= oneWeekAgo;
+    }
+    
+    return matchesSearch;
+  });
+
+  // apply sorting
+  const sortedProjects = [...filteredProjects].sort((a, b) => {
+    // Always show starred projects first if viewing all
+    if (filterType === 'all' && a.starred !== b.starred) {
+      return a.starred ? -1 : 1;
+    }
+    return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+  });
+
+  const toggleStar = async (id: string) => {
+    try {
+      const project = projects.find(p => p._id === id);
+      if (!project) return;
+      
+      const updatedProject = await updateProject(id, { starred: !project.starred });
+      
+      setProjects(projects.map(p => 
+        p._id === id ? updatedProject : p
+      ));
+      
+      toast({
+        title: updatedProject.starred ? "Project starred" : "Project unstarred",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('error toggling star-', error);
+      toast({
+        title: "error",
+        description: "failed to update project. please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // new project
-  const createNewProject = () => {
+  // create new project
+  const createNewProject = async () => {
     if (!newProjectName.trim()) return;
 
-    const newProject = {
-      id: generateProjectId(),
-      name: newProjectName,
-      description: newProjectDescription,
-      createdAt: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
-      starred: false
-    };
+    try {
+      const newProject = await createProject({
+        name: newProjectName,
+        description: newProjectDescription,
+      });
 
-    setProjects([newProject, ...projects]);
-    setNewProjectName('');
-    setNewProjectDescription('');
-    setShowNewProjectModal(false);
+      setProjects([newProject, ...projects]);
+      setNewProjectName('');
+      setNewProjectDescription('');
+      setShowNewProjectModal(false);
 
-    router.push(`/${newProject.id}`);
+      toast({
+        title: "success",
+        description: "project created successfully!",
+      });
+
+      router.push(`/${newProject._id}`);
+    } catch (error) {
+      console.error('error creating project-', error);
+      toast({
+        title: "error",
+        description: "failed to create project. please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <div className="flex flex-col h-screen max-w-6xl mx-auto px-4">
+      {/* toaster component */}
+      <Toaster position="bottom-right" />
+      
       {/* top navigation */}
       <div className="flex items-center justify-between py-4 border-b">
         <div className="flex items-center">
@@ -185,30 +230,25 @@ export default function HomePage() {
           
           <div className="space-y-2">
             <Button 
-              variant="ghost" 
+              variant={filterType === 'all' ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setSearchTerm('')}
+              onClick={() => setFilterType('all')}
             >
               <FileText size={16} className="mr-2" />
               All Projects
             </Button>
             <Button 
-              variant="ghost" 
+              variant={filterType === 'starred' ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setProjects(projects.filter(p => p.starred))}
+              onClick={() => setFilterType('starred')}
             >
               <Star size={16} className="mr-2" />
               Starred
             </Button>
             <Button 
-              variant="ghost" 
+              variant={filterType === 'recent' ? "default" : "ghost"}
               className="w-full justify-start"
-              onClick={() => {
-                const sorted = [...projects].sort((a, b) => 
-                  new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
-                );
-                setProjects(sorted);
-              }}
+              onClick={() => setFilterType('recent')}
             >
               <Clock size={16} className="mr-2" />
               Recent
@@ -240,17 +280,17 @@ export default function HomePage() {
         {/* project list */}
         <div className="flex-1">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Projects</h1>
+            <h1 className="text-2xl font-bold">
+              {filterType === 'all' ? 'All Projects' : 
+              filterType === 'starred' ? 'Starred Projects' : 'Recent Projects'}
+            </h1>
             <div className="flex space-x-2">
               <Button 
                 variant="outline"
-                onClick={() => {
-                  const now = new Date().toISOString();
-                  setProjects(projects.map(p => ({...p, lastUpdated: now})));
-                }}
+                onClick={fetchProjects}
               >
                 <Clock size={16} className="mr-2" />
-                Update All
+                Refresh
               </Button>
               <Button onClick={() => setShowNewProjectModal(true)}>
                 <Plus size={16} className="mr-2" />
@@ -259,12 +299,19 @@ export default function HomePage() {
             </div>
           </div>
 
-          {filteredProjects.length === 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : sortedProjects.length === 0 ? (
             <Card className="flex flex-col items-center justify-center py-12">
               <FileText size={48} className="text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No projects found</h3>
               <p className="text-muted-foreground mb-4">
-                {searchTerm ? "Try a different search term" : "Create your first Markdown project"}
+                {searchTerm ? "Try a different search term" : 
+                filterType === 'starred' ? "Star some projects to see them here" :
+                filterType === 'recent' ? "No recent projects found" :
+                "Create your first Markdown project"}
               </p>
               <Button onClick={() => setShowNewProjectModal(true)}>
                 <Plus size={16} className="mr-2" />
@@ -273,13 +320,13 @@ export default function HomePage() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {filteredProjects.map((project) => (
-                <Card key={project.id} className="hover:border-primary transition-colors duration-200">
+              {sortedProjects.map((project) => (
+                <Card key={project._id} className="hover:border-primary transition-colors duration-200">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <Link href={`/${project.id}`} className="text-lg font-medium hover:underline">
+                          <Link href={`/${project._id}`} className="text-lg font-medium hover:underline">
                             {project.name}
                           </Link>
                           <TooltipProvider>
@@ -289,7 +336,10 @@ export default function HomePage() {
                                   variant="ghost" 
                                   size="icon" 
                                   className="ml-2 h-8 w-8"
-                                  onClick={() => toggleStar(project.id)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    toggleStar(project._id);
+                                  }}
                                 >
                                   <Star 
                                     size={16} 
@@ -314,7 +364,7 @@ export default function HomePage() {
                           </span>
                         </div>
                       </div>
-                      <Link href={`/${project.id}`}>
+                      <Link href={`/${project._id}`}>
                         <Button variant="ghost" size="icon">
                           <ArrowRight size={16} />
                         </Button>
