@@ -80,11 +80,14 @@ export default function HomePage() {
       setProjects(data);
     } catch (error) {
       console.error('error fetching projects-', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "failed to fetch projects. please try again.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "failed to fetch projects. please try again.",
-        variant: "destructive",
-      });
+      })
     } finally {
       setLoading(false);
     }
@@ -130,16 +133,22 @@ export default function HomePage() {
         p._id === id ? updatedProject : p
       ));
       
-      toast({
-        title: updatedProject.starred ? "Project starred" : "Project unstarred",
+      // toast({
+      //   title: updatedProject.starred ? "Project starred" : "Project unstarred",
+      //   duration: 2000,
+      // });
+      toast.message(updatedProject.starred ? "Project starred" : "Project unstarred", {
         duration: 2000,
       });
     } catch (error) {
       console.error('error toggling star-', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "failed to update project. please try again.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "failed to update project. please try again.",
-        variant: "destructive",
       });
     }
   };
@@ -159,18 +168,24 @@ export default function HomePage() {
       setNewProjectDescription('');
       setShowNewProjectModal(false);
 
-      toast({
-        title: "success",
+      // toast({
+      //   title: "success",
+      //   description: "project created successfully!",
+      // });
+      toast.success("success", {
         description: "project created successfully!",
       });
 
       router.push(`/${newProject._id}`);
     } catch (error) {
       console.error('error creating project-', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "failed to create project. please try again.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "failed to create project. please try again.",
-        variant: "destructive",
       });
     }
   };
@@ -178,7 +193,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col h-screen max-w-6xl mx-auto px-4">
       {/* toaster component */}
-      <Toaster position="bottom-right" />
+      {/* <Toaster position="bottom-right" /> */}
       
       {/* top navigation */}
       <div className="flex items-center justify-between py-4 border-b">
@@ -326,7 +341,7 @@ export default function HomePage() {
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <Link href={`/${project._id}`} className="text-lg font-medium hover:underline">
+                          <Link href={`/projects/${project._id}`} className="text-lg font-medium hover:underline">
                             {project.name}
                           </Link>
                           <TooltipProvider>
@@ -364,7 +379,7 @@ export default function HomePage() {
                           </span>
                         </div>
                       </div>
-                      <Link href={`/${project._id}`}>
+                      <Link href={`/projects/${project._id}`}>
                         <Button variant="ghost" size="icon">
                           <ArrowRight size={16} />
                         </Button>

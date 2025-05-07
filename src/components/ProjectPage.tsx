@@ -28,7 +28,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-import MarkdownEditor from './MarkdownEditor';
+import MarkdownEditor, { initialMarkdown } from './MarkdownEditor';
 import { getProject, updateProject, deleteProject as apiDeleteProject } from '@/services/projectService';
 import { IProject } from '@/models/project';
 
@@ -46,10 +46,14 @@ const formatDate = (dateInput: string | Date | undefined) => {
   return date.toLocaleDateString(undefined, options);
 };
 
-export default function ProjectPage() {
+interface ProjectPageProps {
+  id: string;
+}
+
+export default function ProjectPage({ id }: ProjectPageProps) {
   const router = useRouter();
-  const params = useParams();
-  const projectId = params?.projectId as string;
+  // const params = useParams();
+  // const id = params?.id as string;
 
   const [project, setProject] = useState<IProject | null>(null);
   const [markdownContent, setMarkdownContent] = useState<string>('');
@@ -60,29 +64,30 @@ export default function ProjectPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  Toaster({ position: "bottom-right" });
-
   const fetchProjectData = useCallback(async () => {
-    if (projectId) {
+    if (id) {
       setIsLoading(true);
       try {
-        const projectData = await getProject(projectId);
+        const projectData = await getProject(id);
         setProject(projectData);
         setProjectNameInput(projectData.name);
         setMarkdownContent(projectData.content);
       } catch (error) {
         console.error('failed to fetch project-', error);
-        toast({
-          title: "error",
+        // toast({
+        //   title: "error",
+        //   description: "failed to load project. please try again.",
+        //   variant: "destructive",
+        // });
+        toast.error("error", {
           description: "failed to load project. please try again.",
-          variant: "destructive",
         });
         router.push('/'); // redirect if project not found or error
       } finally {
         setIsLoading(false);
       }
     }
-  }, [projectId, router]);
+  }, [id, router]);
 
   useEffect(() => {
     fetchProjectData();
@@ -98,17 +103,23 @@ export default function ProjectPage() {
     try {
       const updated = await updateProject(project._id, { starred: !project.starred });
       setProject(updated);
-      toast({
-        title: updated.starred ? "Project Starred" : "Project Unstarred",
+      // toast({
+      //   title: updated.starred ? "Project Starred" : "Project Unstarred",
+      //   duration: 2000,
+      // });
+      toast.message(updated.starred ? "Project Starred" : "Project Unstarred", {
         duration: 2000,
       });
     } catch (error) {
       console.error('failed to toggle star-', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "could not update star status.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "could not update star status.",
-        variant: "destructive",
-      });
+      })
     } finally {
       setIsSaving(false);
     }
@@ -123,16 +134,22 @@ export default function ProjectPage() {
         lastUpdated: new Date(),
       });
       setProject(updated);
-      toast({
-        title: "project saved",
+      // toast({
+      //   title: "project saved",
+      //   description: "your changes have been saved successfully.",
+      // });
+      toast.success("project saved", {
         description: "your changes have been saved successfully.",
       });
     } catch (error) {
       console.error('failed to save project:', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "could not save project. please try again.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "could not save project. please try again.",
-        variant: "destructive",
       });
     } finally {
       setIsSaving(false);
@@ -153,16 +170,22 @@ export default function ProjectPage() {
       });
       setProject(updated);
       setIsEditingName(false);
-      toast({
-        title: "project name updated",
+      // toast({
+      //   title: "project name updated",
+      //   description: `project name changed to "${updated.name}".`,
+      // });
+      toast.success("project name updated", {
         description: `project name changed to "${updated.name}".`,
       });
     } catch (error) {
       console.error('failed to save project name:', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "could not update project name.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "could not update project name.",
-        variant: "destructive",
       });
       if (project) setProjectNameInput(project.name); // revert on error
     } finally {
@@ -175,18 +198,24 @@ export default function ProjectPage() {
     setIsDeleting(true);
     try {
       await apiDeleteProject(project._id);
-      toast({
-        title: "rroject deleted",
+      // toast({
+      //   title: "rroject deleted",
+      //   description: `"${project.name}" has been deleted.`,
+      // });
+      toast.success("project deleted", {
         description: `"${project.name}" has been deleted.`,
       });
       setShowDeleteModal(false);
       router.push('/');
     } catch (error) {
       console.error('dailed to delete project-', error);
-      toast({
-        title: "error",
+      // toast({
+      //   title: "error",
+      //   description: "could not delete project. please try again.",
+      //   variant: "destructive",
+      // });
+      toast.error("error", {
         description: "could not delete project. please try again.",
-        variant: "destructive",
       });
       setIsDeleting(false);
     }
@@ -214,6 +243,9 @@ export default function ProjectPage() {
       </div>
     );
   }
+
+  console.log("markdownContent", markdownContent);
+  console.log("project", project);
 
   return (
     <div className="flex flex-col h-screen">

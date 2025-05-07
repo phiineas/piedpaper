@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 // initial markdown content
-const initialMarkdown = `# **Welcome to Pied Paper Markdown Editor!**
+export const initialMarkdown = `# **Welcome to Pied Paper Markdown Editor!**
 
 ## The Algorithm
 > "Middle-out compression is the future!" - Richard Hendricks
@@ -70,6 +70,7 @@ export default function MarkdownEditor({ initialContent, onContentChange }: Mark
 
   // update internal state if initialContent prop changes
   useEffect(() => {
+    console.log("initialContent changed-", initialContent);
     setMarkdown(initialContent);
   }, [initialContent]);
 
