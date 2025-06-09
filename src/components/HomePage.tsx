@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 import { getProjects, createProject, updateProject, deleteProject } from '@/services/projectService';
-import { IProject } from '@/models/project';
+import project, { IProject } from '@/models/project';
 
 // format date to relative time
 const formatRelativeTime = (dateInput: string | Date) => {
@@ -176,7 +176,7 @@ export default function HomePage() {
         description: "project created successfully!",
       });
 
-      router.push(`/${newProject._id}`);
+      router.push(`/projects/${newProject._id}`);
     } catch (error) {
       console.error('error creating project-', error);
       // toast({
