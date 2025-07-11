@@ -1,42 +1,16 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import { Project, InsertProject } from '@/lib/schema';
 
-export interface IProject extends Document {
+// re-export the types from the schema
+export type IProject = Project;
+export type ProjectInput = InsertProject;
+
+// for backwards compatibility, also export the interface
+export interface IProjectInterface {
+  id: string;
   name: string;
-  description: string;
-  content: string;
-  createdAt: Date;
-  lastUpdated: Date;
-  starred: boolean;
-  _id: string;
+  description?: string;
+  content?: string;
+  starred?: boolean;
+  createdAt?: Date;
+  lastUpdated?: Date;
 }
-
-const ProjectSchema: Schema = new Schema({
-  name: { 
-    type: String, 
-    required: [true, 'please provide a project name'],
-    trim: true
-  },
-  description: { 
-    type: String, 
-    default: ''
-  },
-  content: { 
-    type: String, 
-    default: '# new project\n\nayoo !'
-  },
-  createdAt: { 
-    type: Date, 
-    default: Date.now
-  },
-  lastUpdated: { 
-    type: Date, 
-    default: Date.now
-  },
-  starred: { 
-    type: Boolean, 
-    default: false
-  }
-});
-
-// prevent mongoose error when model is already defined
-export default mongoose.models.Project || mongoose.model<IProject>('Project', ProjectSchema);
