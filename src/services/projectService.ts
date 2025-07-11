@@ -22,21 +22,6 @@ export async function getProjects(): Promise<IProject[]> {
 }
 
 // get project by ID
-// export async function getProject(id: string): Promise<IProject> {
-//   console.log(id); 
-
-//   const res = await fetch(`/api/projects/${id}`, {
-//     cache: 'no-store',
-//   });
-
-//   if (!res.ok) {
-//     console.log(res.status); 
-//     console.log(await res.text()); 
-//     throw new Error('failed to fetch project');
-//   }
-
-//   return res.json();
-// }
 export async function getProject(id: string): Promise<IProject> {
   const res = await fetch(`/api/projects/${id}`, {
     cache: 'no-store',

@@ -1,66 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import dbConnect from '@/lib/mongodb';
-import Project from '@/models/project';
+import { db } from '@/models/drizzle';
+import { projects } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await dbConnect();
+    const { id } = await params;
+    const project = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'invalid project id' }, { status: 400 });
-    }
-
-    const project = await Project.findById(params.id);
-
-    if (!project) {
+    if (project.length === 0) {
       return NextResponse.json({ error: 'project not found' }, { status: 404 });
     }
 
-    return NextResponse.json(project);
+    return NextResponse.json(project[0]);
   } catch (error) {
     console.error('Error fetching project:', error);
     return NextResponse.json({ error: 'failed to fetch project' }, { status: 500 });
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
-    await dbConnect();
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'invalid project id' }, { status: 400 });
-    }
+    const updatedProject = await db.update(projects)
+      .set({ 
+        ...body, 
+        lastUpdated: new Date() 
+      })
+      .where(eq(projects.id, id))
+      .returning();
 
-    const updatedProject = await Project.findByIdAndUpdate(
-      params.id,
-      { ...body, lastUpdated: new Date() },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedProject) {
+    if (updatedProject.length === 0) {
       return NextResponse.json({ error: 'project not found' }, { status: 404 });
     }
 
-    return NextResponse.json(updatedProject);
+    return NextResponse.json(updatedProject[0]);
   } catch (error) {
     console.error('Error updating project:', error);
     return NextResponse.json({ error: 'failed to update project' }, { status: 500 });
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await dbConnect();
+    const { id } = await params;
+    const deletedProject = await db.delete(projects)
+      .where(eq(projects.id, id))
+      .returning();
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      return NextResponse.json({ error: 'invalid project id' }, { status: 400 });
-    }
-
-    const deletedProject = await Project.findByIdAndDelete(params.id);
-
-    if (!deletedProject) {
+    if (deletedProject.length === 0) {
       return NextResponse.json({ error: 'project not found' }, { status: 404 });
     }
 

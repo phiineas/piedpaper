@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/comp
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
 import {
@@ -28,7 +27,7 @@ import {
   Loader2
 } from 'lucide-react';
 
-import MarkdownEditor, { initialMarkdown } from './MarkdownEditor';
+import MarkdownEditor from './MarkdownEditor';
 import { getProject, updateProject, deleteProject as apiDeleteProject } from '@/services/projectService';
 import { IProject } from '@/models/project';
 
@@ -71,7 +70,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
         const projectData = await getProject(id);
         setProject(projectData);
         setProjectNameInput(projectData.name);
-        setMarkdownContent(projectData.content);
+        setMarkdownContent(projectData.content || '');
       } catch (error) {
         console.error('failed to fetch project-', error);
         // toast({
@@ -101,7 +100,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
     if (!project) return;
     setIsSaving(true);
     try {
-      const updated = await updateProject(project._id, { starred: !project.starred });
+      const updated = await updateProject(project.id, { starred: !project.starred });
       setProject(updated);
       // toast({
       //   title: updated.starred ? "Project Starred" : "Project Unstarred",
@@ -129,7 +128,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
     if (!project) return;
     setIsSaving(true);
     try {
-      const updated = await updateProject(project._id, {
+      const updated = await updateProject(project.id, {
         content: markdownContent,
         lastUpdated: new Date(),
       });
@@ -164,7 +163,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
     }
     setIsSaving(true);
     try {
-      const updated = await updateProject(project._id, {
+      const updated = await updateProject(project.id, {
         name: projectNameInput.trim(),
         lastUpdated: new Date(),
       });
@@ -197,7 +196,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
     if (!project) return;
     setIsDeleting(true);
     try {
-      await apiDeleteProject(project._id);
+      await apiDeleteProject(project.id);
       // toast({
       //   title: "rroject deleted",
       //   description: `"${project.name}" has been deleted.`,

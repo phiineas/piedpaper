@@ -9,8 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 
 import {
@@ -27,8 +25,8 @@ import {
   Loader2
 } from 'lucide-react';
 
-import { getProjects, createProject, updateProject, deleteProject } from '@/services/projectService';
-import project, { IProject } from '@/models/project';
+import { getProjects, createProject, updateProject } from '@/services/projectService';
+import { IProject } from '@/models/project';
 
 // format date to relative time
 const formatRelativeTime = (dateInput: string | Date) => {
@@ -98,7 +96,7 @@ export default function HomePage() {
     // search term filter
     const matchesSearch = 
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      project.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (project.description || '').toLowerCase().includes(searchTerm.toLowerCase());
       
     // type filter
     if (filterType === 'starred') {
@@ -124,13 +122,13 @@ export default function HomePage() {
 
   const toggleStar = async (id: string) => {
     try {
-      const project = projects.find(p => p._id === id);
+      const project = projects.find(p => p.id === id);
       if (!project) return;
       
       const updatedProject = await updateProject(id, { starred: !project.starred });
       
       setProjects(projects.map(p => 
-        p._id === id ? updatedProject : p
+        p.id === id ? updatedProject : p
       ));
       
       // toast({
@@ -176,7 +174,7 @@ export default function HomePage() {
         description: "project created successfully!",
       });
 
-      router.push(`/projects/${newProject._id}`);
+      router.push(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('error creating project-', error);
       // toast({
@@ -336,12 +334,12 @@ export default function HomePage() {
           ) : (
             <div className="grid gap-4">
               {sortedProjects.map((project) => (
-                <Card key={project._id} className="hover:border-primary transition-colors duration-200">
+                <Card key={project.id} className="hover:border-primary transition-colors duration-200">
                   <CardContent className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <Link href={`/projects/${project._id}`} className="text-lg font-medium hover:underline">
+                          <Link href={`/projects/${project.id}`} className="text-lg font-medium hover:underline">
                             {project.name}
                           </Link>
                           <TooltipProvider>
@@ -353,7 +351,7 @@ export default function HomePage() {
                                   className="ml-2 h-8 w-8"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    toggleStar(project._id);
+                                    toggleStar(project.id);
                                   }}
                                 >
                                   <Star 
@@ -379,7 +377,7 @@ export default function HomePage() {
                           </span>
                         </div>
                       </div>
-                      <Link href={`/projects/${project._id}`}>
+                      <Link href={`/projects/${project.id}`}>
                         <Button variant="ghost" size="icon">
                           <ArrowRight size={16} />
                         </Button>
