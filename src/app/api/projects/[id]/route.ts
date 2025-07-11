@@ -3,10 +3,9 @@ import { db } from '@/models/drizzle';
 import { projects } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
-    const project = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    const project = await db.select().from(projects).where(eq(projects.id, params.id)).limit(1);
 
     if (project.length === 0) {
       return NextResponse.json({ error: 'project not found' }, { status: 404 });
@@ -19,9 +18,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
     const body = await req.json();
 
     const updatedProject = await db.update(projects)
@@ -29,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...body, 
         lastUpdated: new Date() 
       })
-      .where(eq(projects.id, id))
+      .where(eq(projects.id, params.id))
       .returning();
 
     if (updatedProject.length === 0) {
@@ -43,11 +41,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params;
     const deletedProject = await db.delete(projects)
-      .where(eq(projects.id, id))
+      .where(eq(projects.id, params.id))
       .returning();
 
     if (deletedProject.length === 0) {
