@@ -1,12 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/models/drizzle';
 import { projects } from '@/lib/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { auth } from '@/lib/auth';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
-    const project = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+    const project = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
+      .limit(1);
 
     if (project.length === 0) {
       return NextResponse.json({ error: 'project not found' }, { status: 404 });
@@ -21,6 +31,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await req.json();
 
@@ -29,7 +44,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ...body, 
         lastUpdated: new Date() 
       })
-      .where(eq(projects.id, id))
+      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
       .returning();
 
     if (updatedProject.length === 0) {
@@ -45,9 +60,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
-    const deletedProject = await db.delete(projects)
-      .where(eq(projects.id, id))
+    const deletedProject = await db
+      .delete(projects)
+      .where(and(eq(projects.id, id), eq(projects.userId, session.user.id)))
       .returning();
 
     if (deletedProject.length === 0) {

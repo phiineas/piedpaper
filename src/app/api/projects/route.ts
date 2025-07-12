@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/models/drizzle';
 import { projects } from '@/lib/schema';
-import { desc } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
+import { auth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const allProjects = await db.select().from(projects).orderBy(desc(projects.lastUpdated));
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
+    const allProjects = await db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, session.user.id))
+      .orderBy(desc(projects.lastUpdated));
+    
     return NextResponse.json(allProjects);
   } catch (error) {
     console.error('error fetching projects', error);
@@ -15,6 +26,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     
     const newProject = await db.insert(projects).values({
@@ -22,6 +38,7 @@ export async function POST(req: NextRequest) {
       description: body.description || '',
       content: body.content || '# ' + body.name + '\n\nayoo !',
       starred: body.starred || false,
+      userId: session.user.id,
       createdAt: new Date(),
       lastUpdated: new Date(),
     }).returning();

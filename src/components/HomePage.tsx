@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useSession, signOut } from 'next-auth/react';
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +23,8 @@ import {
   X,
   GitBranch,
   Code,
-  Loader2
+  Loader2,
+  LogOut,
 } from 'lucide-react';
 
 import { getProjects, createProject, updateProject } from '@/services/projectService';
@@ -55,6 +57,7 @@ const formatRelativeTime = (dateInput: string | Date) => {
 };
 
 export default function HomePage() {
+  const { status } = useSession();
   const [projects, setProjects] = useState<IProject[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -65,10 +68,19 @@ export default function HomePage() {
   
   const router = useRouter();
 
+  // redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+    }
+  }, [status, router]);
+
   // fetch projects on component mount
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (status === 'authenticated') {
+      fetchProjects();
+    }
+  }, [status]);
 
   // fetch projects from the API
   async function fetchProjects() {
@@ -188,6 +200,20 @@ export default function HomePage() {
     }
   };
 
+  // don't render anything while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // don't render anything if not authenticated (will redirect)
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-screen max-w-6xl mx-auto px-4">
       {/* toaster component */}
@@ -218,6 +244,20 @@ export default function HomePage() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Create New Project</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => signOut()}
+                  size="icon"
+                  variant="outline"
+                >
+                  <LogOut size={18} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Sign Out</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
