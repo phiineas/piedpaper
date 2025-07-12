@@ -125,7 +125,7 @@ export default function HomePage() {
 
   // apply sorting
   const sortedProjects = [...filteredProjects].sort((a, b) => {
-    // Always show starred projects first if viewing all
+    // always show starred projects first if viewing all
     if (filterType === 'all' && a.starred !== b.starred) {
       return a.starred ? -1 : 1;
     }

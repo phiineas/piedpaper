@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     // validate input
     if (!name || !email || !password) {
       return NextResponse.json(
-        { error: "Name, email, and password are required" },
+        { error: "name, email, and password are required" },
         { status: 400 }
       );
     }
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (existingUser.length > 0) {
       return NextResponse.json(
-        { error: "User already exists" },
+        { error: "user already exists" },
         { status: 409 }
       );
     }
@@ -44,13 +44,13 @@ export async function POST(request: NextRequest) {
       .returning({ id: users.id, name: users.name, email: users.email });
 
     return NextResponse.json(
-      { message: "User created successfully", user: newUser[0] },
+      { message: "user created successfully", user: newUser[0] },
       { status: 201 }
     );
   } catch (error) {
-    console.error("Sign-up error:", error);
+    console.error("sign-up error-", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "internal server error" },
       { status: 500 }
     );
   }

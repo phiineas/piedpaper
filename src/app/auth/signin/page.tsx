@@ -30,7 +30,7 @@ export default function SignInPage() {
         toast.error("invalid credentials");
       } else {
         toast.success("signed in successfully!");
-        router.push("/");
+        router.push("/home");
       }
     } catch (error) {
       console.error("sign-in error-", error);
@@ -78,7 +78,7 @@ export default function SignInPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? "signing in .." : "Sign In"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

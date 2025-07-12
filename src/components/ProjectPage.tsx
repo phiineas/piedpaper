@@ -81,7 +81,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
         toast.error("error", {
           description: "failed to load project. please try again.",
         });
-        router.push('/'); // redirect if project not found or error
+        router.push('/home'); // redirect if project not found or error
       } finally {
         setIsLoading(false);
       }
@@ -236,7 +236,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
         <p className="text-muted-foreground mb-4">
           The project you are looking for does not exist or could not be loaded.
         </p>
-        <Link href="/">
+        <Link href="/home">
           <Button>Go to Homepage</Button>
         </Link>
       </div>
@@ -251,7 +251,7 @@ export default function ProjectPage({ id }: ProjectPageProps) {
       <header className="bg-card border-b py-3 px-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div className="flex items-center">
-            <Link href="/">
+            <Link href="/home">
               <Button variant="ghost" size="icon" className="mr-2">
                 <ChevronLeft size={18} />
               </Button>

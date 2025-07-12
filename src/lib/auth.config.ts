@@ -66,6 +66,13 @@ const authConfig: NextAuthConfig = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Redirect to /home after successful sign-in
+      if (url.startsWith("/") || url.startsWith(baseUrl)) {
+        return `${baseUrl}/home`;
+      }
+      return baseUrl;
+    },
   },
   session: {
     strategy: "jwt",
