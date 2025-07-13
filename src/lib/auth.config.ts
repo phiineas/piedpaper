@@ -67,11 +67,16 @@ const authConfig: NextAuthConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Redirect to /home after successful sign-in
-      if (url.startsWith("/") || url.startsWith(baseUrl)) {
-        return `${baseUrl}/home`;
+      // if the URL is relative or from the same domain
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
       }
-      return baseUrl;
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      
+      // default redirect to home after successful sign-in
+      return `${baseUrl}/home`;
     },
   },
   session: {

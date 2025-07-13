@@ -23,19 +23,21 @@ export default function SignInPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirect: false, // handle redirect manually to access result
+        callbackUrl: "/home", // explicit callback URL
       });
 
-      if (result?.error) {
+      if (result && result.error) {
         toast.error("invalid credentials");
-      } else {
-        toast.success("signed in successfully!");
+        setIsLoading(false);
+      } else if (result && result.ok) {
         router.push("/home");
       }
+      // don't set loading to false here if redirect: true
+      // NextAuth will handle the redirect
     } catch (error) {
       console.error("sign-in error-", error);
       toast.error("an error occurred during sign-in");
-    } finally {
       setIsLoading(false);
     }
   };
