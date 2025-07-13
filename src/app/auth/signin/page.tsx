@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,6 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,16 +27,17 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        toast.error("Invalid credentials. Please try again.");
+        toast.error("invalid credentials. please try again.");
         setIsLoading(false);
       } else if (result?.ok) {
-        toast.success("Signed in successfully!");
+        toast.success("signed in successfully!");
         setIsLoading(false);
         setIsRedirecting(true);
 
+        // force a hard navigation to ensure session is properly set
         setTimeout(() => {
-          router.push("/home");
-        }, 1000); // 1 second delay
+          window.location.href = '/home';
+        }, 1500); // slightly longer delay to ensure session is set
       } else {
         toast.error("something went wrong. please try again.");
         setIsLoading(false);
@@ -88,7 +87,7 @@ export default function SignInPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
-              {isLoading ? "Signing in..." : isRedirecting ? "Redirecting..." : "Sign In"}
+              {isLoading ? "signing in ..." : isRedirecting ? "redirecting ..." : "Sign In"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

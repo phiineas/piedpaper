@@ -11,25 +11,41 @@ export async function middleware(request: NextRequest) {
   const isAuth = !!token;
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isLandingPage = request.nextUrl.pathname === '/';
+  const isHomePage = request.nextUrl.pathname === '/home';
+
+  // debug logging (remove in production)
+  console.log('Middleware:', {
+    path: request.nextUrl.pathname,
+    isAuth,
+    isAuthPage,
+    isLandingPage,
+    isHomePage,
+    hasToken: !!token
+  });
 
   // allow access to landing page without authentication
   if (isLandingPage) {
     return NextResponse.next();
   }
 
+  // if user is on auth pages
   if (isAuthPage) {
+    // if authenticated, redirect to home
     if (isAuth) {
       return NextResponse.redirect(new URL('/home', request.url));
     }
+    // if not authenticated, allow access to auth pages
     return NextResponse.next();
   }
 
+  // if user is trying to access protected routes (including /home)
   if (!isAuth) {
     return NextResponse.redirect(
       new URL('/auth/signin', request.url)
     );
   }
 
+  // if authenticated and accessing any other protected route, allow
   return NextResponse.next();
 }
 
