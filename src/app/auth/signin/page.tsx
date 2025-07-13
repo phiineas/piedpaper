@@ -13,6 +13,7 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,14 +28,21 @@ export default function SignInPage() {
         callbackUrl: "/home", // explicit callback URL
       });
 
-      if (result && result.error) {
-        toast.error("invalid credentials");
+      if (result?.error) {
+        toast.error("Invalid credentials. Please try again.");
         setIsLoading(false);
-      } else if (result && result.ok) {
-        router.push("/home");
+      } else if (result?.ok) {
+        toast.success("Signed in successfully!");
+        setIsLoading(false);
+        setIsRedirecting(true);
+
+        setTimeout(() => {
+          router.push("/home");
+        }, 1000); // 1 second delay
+      } else {
+        toast.error("something went wrong. please try again.");
+        setIsLoading(false);
       }
-      // don't set loading to false here if redirect: true
-      // NextAuth will handle the redirect
     } catch (error) {
       console.error("sign-in error-", error);
       toast.error("an error occurred during sign-in");
@@ -79,8 +87,8 @@ export default function SignInPage() {
                 required
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "signing in .." : "Sign In"}
+            <Button type="submit" className="w-full" disabled={isLoading || isRedirecting}>
+              {isLoading ? "Signing in..." : isRedirecting ? "Redirecting..." : "Sign In"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
