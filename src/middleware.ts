@@ -3,17 +3,15 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
-  // get the token with proper secret handling for Vercel
   const token = await getToken({ 
     req: request, 
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === 'production' // use secure cookies in production
+    secureCookie: process.env.NODE_ENV === 'production'
   });
   
   const isAuth = !!token;
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
   const isLandingPage = request.nextUrl.pathname === '/';
-  const isHomePage = request.nextUrl.pathname === '/home';
 
   // debug logging - only in development
   if (process.env.NODE_ENV === 'development') {
@@ -22,10 +20,7 @@ export async function middleware(request: NextRequest) {
       isAuth,
       isAuthPage,
       isLandingPage,
-      isHomePage,
-      hasToken: !!token,
-      host: request.headers.get('host'),
-      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+      hasToken: !!token
     });
   }
 
@@ -44,19 +39,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // if user is trying to access protected routes (including /home)
+  // if user is trying to access protected routes
   if (!isAuth) {
-    let callbackUrl = request.nextUrl.pathname;
-    if (request.nextUrl.search) {
-      callbackUrl += request.nextUrl.search;
-    }
-    
-    const signInUrl = new URL('/auth/signin', request.url);
-    if (callbackUrl !== '/auth/signin') {
-      signInUrl.searchParams.set('callbackUrl', callbackUrl);
-    }
-    
-    return NextResponse.redirect(signInUrl);
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
   // if authenticated and accessing any other protected route, allow

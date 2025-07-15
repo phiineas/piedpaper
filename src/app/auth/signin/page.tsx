@@ -22,8 +22,7 @@ export default function SignInPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false, // handle redirect manually to access result
-        callbackUrl: "/home", // explicit callback URL
+        redirect: false,
       });
 
       if (result?.error) {
@@ -31,13 +30,9 @@ export default function SignInPage() {
         setIsLoading(false);
       } else if (result?.ok) {
         toast.success("signed in successfully!");
-        setIsLoading(false);
         setIsRedirecting(true);
-
-        // force a hard navigation to ensure session is properly set
-        setTimeout(() => {
-          window.location.href = '/home';
-        }, 1500); // slightly longer delay to ensure session is set
+        // Let NextAuth handle the redirect naturally
+        window.location.href = '/home';
       } else {
         toast.error("something went wrong. please try again.");
         setIsLoading(false);

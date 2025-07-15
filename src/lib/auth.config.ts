@@ -81,10 +81,7 @@ const authConfig: NextAuthConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
   },
-  debug: process.env.NODE_ENV === "development", // enable debug in development
-  useSecureCookies: process.env.NODE_ENV === "production", // use secure cookies in production
 };
 
 export default authConfig;
