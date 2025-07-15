@@ -3,9 +3,11 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  // get the token with proper secret handling for Vercel
   const token = await getToken({ 
     req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NODE_ENV === 'production' // use secure cookies in production
   });
   
   const isAuth = !!token;
@@ -13,15 +15,19 @@ export async function middleware(request: NextRequest) {
   const isLandingPage = request.nextUrl.pathname === '/';
   const isHomePage = request.nextUrl.pathname === '/home';
 
-  // debug logging (remove in production)
-  console.log('Middleware:', {
-    path: request.nextUrl.pathname,
-    isAuth,
-    isAuthPage,
-    isLandingPage,
-    isHomePage,
-    hasToken: !!token
-  });
+  // debug logging - only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Middleware:', {
+      path: request.nextUrl.pathname,
+      isAuth,
+      isAuthPage,
+      isLandingPage,
+      isHomePage,
+      hasToken: !!token,
+      host: request.headers.get('host'),
+      userAgent: request.headers.get('user-agent')?.substring(0, 50)
+    });
+  }
 
   // allow access to landing page without authentication
   if (isLandingPage) {
@@ -40,9 +46,17 @@ export async function middleware(request: NextRequest) {
 
   // if user is trying to access protected routes (including /home)
   if (!isAuth) {
-    return NextResponse.redirect(
-      new URL('/auth/signin', request.url)
-    );
+    let callbackUrl = request.nextUrl.pathname;
+    if (request.nextUrl.search) {
+      callbackUrl += request.nextUrl.search;
+    }
+    
+    const signInUrl = new URL('/auth/signin', request.url);
+    if (callbackUrl !== '/auth/signin') {
+      signInUrl.searchParams.set('callbackUrl', callbackUrl);
+    }
+    
+    return NextResponse.redirect(signInUrl);
   }
 
   // if authenticated and accessing any other protected route, allow
