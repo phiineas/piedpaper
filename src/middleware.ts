@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   });
   
   const isAuth = !!token;
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const isAuthPage = request.nextUrl.pathname.startsWith('/sign-in') || request.nextUrl.pathname.startsWith('/sign-up');
   const isLandingPage = request.nextUrl.pathname === '/';
 
   // debug logging - only in development
@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
 
   // if user is trying to access protected routes
   if (!isAuth) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
+    return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
   // if authenticated and accessing any other protected route, allow

@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "clean": "rimraf .next out dist node_modules/.cache .turbo && npm cache clean --force",
+    "clean:all": "rimraf .next out dist node_modules .turbo && npm cache clean --force && npm install",
+    "clean:build": "rimraf .next out dist .turbo",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -48,6 +51,7 @@
     "drizzle-kit": "^0.24.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
+    "rimraf": "^5.0.5",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.2.8",
     "typescript": "^5"
