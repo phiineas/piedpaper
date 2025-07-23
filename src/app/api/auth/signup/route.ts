@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import { db } from "@/models/drizzle";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
+import { sendVerificationEmail } from "@/lib/email";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +14,23 @@ export async function POST(request: NextRequest) {
     if (!name || !email || !password) {
       return NextResponse.json(
         { error: "name, email, and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // validate password strength
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "password must be at least 6 characters long" },
         { status: 400 }
       );
     }
@@ -33,6 +52,11 @@ export async function POST(request: NextRequest) {
     // hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const verificationExpires = new Date();
+    verificationExpires.setHours(verificationExpires.getHours() + 24); // 24 hours
+
     // create user
     const newUser = await db
       .insert(users)
@@ -40,11 +64,26 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
+        provider: "credentials",
+        emailVerificationToken: verificationToken,
+        emailVerificationExpires: verificationExpires,
       })
       .returning({ id: users.id, name: users.name, email: users.email });
 
+    // send verification email
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail the signup if email fails
+    }
+
     return NextResponse.json(
-      { message: "user created successfully", user: newUser[0] },
+      { 
+        message: "user created successfully. please check your email to verify your account.",
+        user: newUser[0],
+        requiresVerification: true
+      },
       { status: 201 }
     );
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { db } from "@/models/drizzle";
 import { users } from "@/lib/schema";
@@ -7,6 +8,11 @@ import { eq } from "drizzle-orm";
 
 const authConfig: NextAuthConfig = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true, // allow linking accounts with same email
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -29,9 +35,14 @@ const authConfig: NextAuthConfig = {
             return null;
           }
 
+          // check if email is verified for credentials users
+          if (user[0].provider === "credentials" && !user[0].emailVerified) {
+            throw new Error("please verify your email before signing in");
+          }
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,
-            user[0].password
+            user[0].password || ""
           );
 
           if (!isPasswordValid) {
@@ -54,6 +65,48 @@ const authConfig: NextAuthConfig = {
     signIn: "/sign-in",
   },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          // check if user already exists
+          const existingUser = await db
+            .select()
+            .from(users)
+            .where(eq(users.email, user.email!))
+            .limit(1);
+
+          if (existingUser.length === 0) {
+            // create new user for Google OAuth
+            await db.insert(users).values({
+              name: user.name!,
+              email: user.email!,
+              image: user.image,
+              provider: "google",
+              providerId: user.id,
+              emailVerified: new Date(),
+            });
+          } else {
+            // update existing user with Google info if they signed up with credentials
+            if (existingUser[0].provider === "credentials") {
+              await db
+                .update(users)
+                .set({
+                  provider: "google",
+                  providerId: user.id,
+                  image: user.image,
+                  emailVerified: new Date(),
+                })
+                .where(eq(users.email, user.email!));
+            }
+          }
+          return true;
+        } catch (error) {
+          console.error("google sign-in error-", error);
+          return false;
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
