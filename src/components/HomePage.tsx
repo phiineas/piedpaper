@@ -92,7 +92,7 @@ export default function HomePage() {
       setProjects(data);
     } catch (error) {
       console.error('error fetching projects-', error);
-      toast.error("Failed to fetch projects. Please try again.");
+      toast.error("failed to fetch projects. please try again.");
     } finally {
       setLoading(false);
     }
@@ -136,7 +136,7 @@ export default function HomePage() {
       toast.success(updatedProject.starred ? "Project starred" : "Project unstarred");
     } catch (error) {
       console.error('error toggling star-', error);
-      toast.error("Failed to update project. Please try again.");
+      toast.error("failed to update project. please try again.");
     }
   };
 
@@ -154,11 +154,11 @@ export default function HomePage() {
       setNewProjectName('');
       setNewProjectDescription('');
       setShowNewProjectModal(false);
-      toast.success("Project created successfully!");
+      toast.success("project created successfully!");
       router.push(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('error creating project-', error);
-      toast.error("Failed to create project. Please try again.");
+      toast.error("failed to create project. please try again.");
     } finally {
       setIsCreating(false);
     }
