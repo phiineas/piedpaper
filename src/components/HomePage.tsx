@@ -266,7 +266,7 @@ export default function HomePage() {
                 {[
                   { icon: Plus, label: 'New Project', action: () => setShowNewProjectModal(true) },
                   { icon: GitBranch, label: 'Import Project', action: () => {} },
-                  { icon: BookOpen, label: 'Browse Templates', action: () => {} },
+                  { icon: BookOpen, label: 'Browse Templates', action: () => router.push('/templates') },
                 ].map((item, index) => (
                   <motion.div
                     key={item.label}
