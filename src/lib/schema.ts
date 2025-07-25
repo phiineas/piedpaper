@@ -9,6 +9,8 @@ export const users = pgTable('users', {
   emailVerified: timestamp('email_verified'),
   emailVerificationToken: text('email_verification_token'),
   emailVerificationExpires: timestamp('email_verification_expires'),
+  emailVerificationCode: text('email_verification_code'), 
+  emailVerificationCodeExpires: timestamp('email_verification_code_expires'), 
   image: text('image'), 
   provider: text('provider').default('credentials'),
   providerId: text('provider_id'), 

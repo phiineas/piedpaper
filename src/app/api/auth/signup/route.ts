@@ -52,10 +52,15 @@ export async function POST(request: NextRequest) {
     // hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // generate verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // generate 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationExpires = new Date();
-    verificationExpires.setHours(verificationExpires.getHours() + 24); // 24 hours
+    verificationExpires.setMinutes(verificationExpires.getMinutes() + 15); // 15 minutes for code
+
+    // generate verification token (still keep for backward compatibility)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpires = new Date();
+    tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours for token
 
     // create user
     const newUser = await db
@@ -66,16 +71,18 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         provider: "credentials",
         emailVerificationToken: verificationToken,
-        emailVerificationExpires: verificationExpires,
+        emailVerificationExpires: tokenExpires,
+        emailVerificationCode: verificationCode,
+        emailVerificationCodeExpires: verificationExpires,
       })
       .returning({ id: users.id, name: users.name, email: users.email });
 
-    // send verification email
+    // send verification email with code
     try {
-      await sendVerificationEmail(email, verificationToken);
+      await sendVerificationEmail(email, verificationToken, verificationCode);
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
-      // Don't fail the signup if email fails
+      // don't fail the signup if email fails
     }
 
     return NextResponse.json(

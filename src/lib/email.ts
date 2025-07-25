@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendVerificationEmail(email: string, token: string) {
+export async function sendVerificationEmail(email: string, token: string, verificationCode?: string) {
   const verificationUrl = `${process.env.NEXTAUTH_URL}/verify-email?token=${token}`;
   
   const mailOptions = {
@@ -29,8 +29,24 @@ export async function sendVerificationEmail(email: string, token: string) {
           <h2 style="color: #333; margin-bottom: 20px;">Welcome to Pied Paper!</h2>
           <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
             Thank you for signing up. To complete your registration and start using Pied Paper, 
-            please verify your email address by clicking the button below.
+            please verify your email address.
           </p>
+          
+          ${verificationCode ? `
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background: white; border: 2px dashed #007bff; padding: 20px; border-radius: 8px; display: inline-block;">
+              <p style="color: #333; margin: 0 0 10px 0; font-weight: 500;">Your verification code:</p>
+              <div style="font-size: 36px; font-weight: bold; color: #007bff; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+                ${verificationCode}
+              </div>
+              <p style="color: #666; margin: 10px 0 0 0; font-size: 12px;">This code expires in 15 minutes</p>
+            </div>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px; text-align: center;">
+            Enter this code on the verification page, or click the button below:
+          </p>
+          ` : ''}
           
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationUrl}" 
@@ -57,10 +73,10 @@ export async function sendVerificationEmail(email: string, token: string) {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log('Verification email sent successfully');
+    console.log('verification email sent successfully');
   } catch (error) {
-    console.error('Error sending verification email:', error);
-    throw new Error('Failed to send verification email');
+    console.error('error sending verification email-', error);
+    throw new Error('failed to send verification email');
   }
 }
 

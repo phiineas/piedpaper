@@ -6,32 +6,63 @@ import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
-    const { token } = await request.json();
+    const { token, code, email } = await request.json();
 
-    if (!token) {
+    if (!token && !code) {
       return NextResponse.json(
-        { error: "verification token is required" },
+        { error: "verification token or code is required" },
         { status: 400 }
       );
     }
 
-    // find user with valid token
-    const user = await db
-      .select()
-      .from(users)
-      .where(
-        and(
-          eq(users.emailVerificationToken, token),
-          gt(users.emailVerificationExpires, new Date())
-        )
-      )
-      .limit(1);
+    let user;
 
-    if (user.length === 0) {
-      return NextResponse.json(
-        { error: "invalid or expired verification token" },
-        { status: 400 }
-      );
+    if (code) {
+      // Verify using code (requires email)
+      if (!email) {
+        return NextResponse.json(
+          { error: "email is required when using verification code" },
+          { status: 400 }
+        );
+      }
+
+      user = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.email, email),
+            eq(users.emailVerificationCode, code),
+            gt(users.emailVerificationCodeExpires, new Date())
+          )
+        )
+        .limit(1);
+
+      if (user.length === 0) {
+        return NextResponse.json(
+          { error: "invalid or expired verification code" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // verify using token (legacy method)
+      user = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.emailVerificationToken, token),
+            gt(users.emailVerificationExpires, new Date())
+          )
+        )
+        .limit(1);
+
+      if (user.length === 0) {
+        return NextResponse.json(
+          { error: "invalid or expired verification token" },
+          { status: 400 }
+        );
+      }
     }
 
     // update user as verified
@@ -41,6 +72,8 @@ export async function POST(request: NextRequest) {
         emailVerified: new Date(),
         emailVerificationToken: null,
         emailVerificationExpires: null,
+        emailVerificationCode: null,
+        emailVerificationCodeExpires: null,
       })
       .where(eq(users.id, user[0].id));
 
@@ -104,6 +137,8 @@ export async function GET(request: NextRequest) {
         emailVerified: new Date(),
         emailVerificationToken: null,
         emailVerificationExpires: null,
+        emailVerificationCode: null,
+        emailVerificationCodeExpires: null,
       })
       .where(eq(users.id, user[0].id));
 

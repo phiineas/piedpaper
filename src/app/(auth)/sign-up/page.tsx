@@ -35,10 +35,9 @@ export default function SignUpPage() {
         const data = await response.json();
         
         if (data.requiresVerification) {
-          toast.success("Account created! Please check your email to verify your account.");
-          // show verification message instead of auto-signin
-          setIsLoading(false);
-          // could redirect to a verification pending page
+          toast.success("account created! please check your email to verify your account.");
+          // redirect to verification page with email parameter
+          window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
         } else {
           toast.success("Account created successfully!");
           // automatically sign in after successful signup
