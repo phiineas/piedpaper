@@ -28,7 +28,7 @@ import {
   Plus
 } from 'lucide-react';
 
-import { getProjects, createProject, updateProject } from '@/services/projectService';
+import { getProjects, createProject, updateProject, getProjectStats, ProjectLimitError, ProjectStats } from '@/services/projectService';
 import { IProject } from '@/models/project';
 import Navbar from './Navbar';
 import NewProjectModal from './NewProjectModal';
@@ -67,6 +67,7 @@ export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
   
   const router = useRouter();
 
@@ -88,8 +89,12 @@ export default function HomePage() {
   async function fetchProjects() {
     try {
       setLoading(true);
-      const data = await getProjects();
-      setProjects(data);
+      const [projectsData, statsData] = await Promise.all([
+        getProjects(),
+        getProjectStats()
+      ]);
+      setProjects(projectsData);
+      setProjectStats(statsData);
     } catch (error) {
       console.error('error fetching projects-', error);
       toast.error("failed to fetch projects. please try again.");
@@ -155,10 +160,19 @@ export default function HomePage() {
       setNewProjectDescription('');
       setShowNewProjectModal(false);
       toast.success("project created successfully!");
+      
+      // refresh project stats
+      const updatedStats = await getProjectStats();
+      setProjectStats(updatedStats);
+      
       router.push(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('error creating project-', error);
-      toast.error("failed to create project. please try again.");
+      if (error instanceof ProjectLimitError) {
+        toast.error(`Project limit reached! You can create up to ${error.maxProjects} projects.`);
+      } else {
+        toast.error("failed to create project. please try again.");
+      }
     } finally {
       setIsCreating(false);
     }
@@ -575,6 +589,8 @@ export default function HomePage() {
         setProjectDescription={setNewProjectDescription}
         onCreateProject={handleCreateNewProject}
         isCreating={isCreating}
+        currentCount={projectStats?.currentCount}
+        maxProjects={projectStats?.maxProjects}
       />
     </div>
   );
