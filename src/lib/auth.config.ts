@@ -35,10 +35,7 @@ const authConfig: NextAuthConfig = {
             return null;
           }
 
-          // check if email is verified for credentials users
-          if (user[0].provider === "credentials" && !user[0].emailVerified) {
-            throw new Error("please verify your email before signing in");
-          }
+          // email verification removed - users can sign in immediately
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password as string,

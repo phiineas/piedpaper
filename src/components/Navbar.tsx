@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,14 @@ interface NavbarProps {
 export default function Navbar({ searchTerm, setSearchTerm, onNewProject }: NavbarProps) {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: session } = useSession();
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/' || href === '/home') {
+      return pathname === '/' || pathname === '/home';
+    }
+    return pathname.startsWith(href);
+  };
 
   return (
     <motion.header 
@@ -45,7 +54,7 @@ export default function Navbar({ searchTerm, setSearchTerm, onNewProject }: Navb
             whileHover={{ scale: 1.05 }}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
-            <Link href="/" className="flex items-center gap-3">
+            <Link href="/home" className="flex items-center gap-3">
               <div className="relative">
                 <FileText className="h-8 w-8 text-primary" />
                 <motion.div
@@ -63,9 +72,9 @@ export default function Navbar({ searchTerm, setSearchTerm, onNewProject }: Navb
           {/* Navigation */}
           <nav className="hidden md:flex items-center space-x-1">
             {[
-              { name: 'Dashboard', icon: Home, active: true, href: '/' },
-              { name: 'Projects', icon: FileText, active: false, href: '/projects' },
-              { name: 'Templates', icon: BookOpen, active: false, href: '/templates' }
+              { name: 'Dashboard', icon: Home, href: '/home' },
+              { name: 'Projects', icon: FileText, href: '/projects' },
+              { name: 'Templates', icon: BookOpen, href: '/templates' }
             ].map((item, index) => (
               <motion.div
                 key={item.name}
@@ -75,9 +84,9 @@ export default function Navbar({ searchTerm, setSearchTerm, onNewProject }: Navb
               >
                 <Link href={item.href}>
                   <Button
-                    variant={item.active ? "default" : "ghost"}
+                    variant={isActive(item.href) ? "default" : "ghost"}
                     size="sm"
-                    className={`flex items-center gap-2 ${item.active ? 'shadow-lg' : ''}`}
+                    className={`flex items-center gap-2 ${isActive(item.href) ? 'shadow-lg' : ''}`}
                   >
                     <item.icon className="h-4 w-4" />
                     {item.name}
