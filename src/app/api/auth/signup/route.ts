@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { db } from "@/models/drizzle";
 import { users } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,19 +62,10 @@ export async function POST(request: NextRequest) {
       })
       .returning({ id: users.id, name: users.name, email: users.email });
 
-    // send welcome email without verification
-    try {
-      await sendWelcomeEmail(email, name);
-    } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
-      // don't fail the signup if email fails
-    }
-
     return NextResponse.json(
       { 
         message: "user created successfully",
-        user: newUser[0],
-        requiresVerification: false
+        user: newUser[0]
       },
       { status: 201 }
     );
