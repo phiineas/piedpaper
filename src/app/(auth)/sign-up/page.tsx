@@ -32,26 +32,18 @@ export default function SignUpPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        
-        if (data.requiresVerification) {
-          toast.success("account created! please check your email to verify your account.");
-          // redirect to verification page with email parameter
-          window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-        } else {
-          toast.success("Account created successfully!");
-          // automatically sign in after successful signup
-          const result = await signIn("credentials", {
-            email,
-            password,
-            redirect: false,
-          });
+        toast.success("Account created successfully!");
+        // automatically sign in after successful signup
+        const result = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
 
-          if (result?.ok) {
-            window.location.href = '/home';
-          } else {
-            toast.error("sign-up successful but sign-in failed. please try signing in.");
-          }
+        if (result?.ok) {
+          window.location.href = '/home';
+        } else {
+          toast.error("sign-up successful but sign-in failed. please try signing in.");
         }
       } else {
         const data = await response.json();
