@@ -41,7 +41,7 @@ export default function SignUpPage() {
         });
 
         if (result?.ok) {
-          window.location.href = '/sign-in';
+          window.location.href = '/home';
         } else {
           toast.error("sign-up successful but sign-in failed. please try signing in.");
         }

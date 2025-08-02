@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import AIToolbar from "@/components/AIToolbar";
 
 import { 
   Bold, Italic, Code, Heading1, Heading2, Heading3, 
@@ -66,6 +67,7 @@ interface MarkdownEditorProps {
 
 export default function MarkdownEditor({ initialContent, onContentChange }: MarkdownEditorProps) {
   const [markdown, setMarkdown] = useState(initialContent);
+  const [selectedText, setSelectedText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // update internal state if initialContent prop changes
@@ -77,6 +79,58 @@ export default function MarkdownEditor({ initialContent, onContentChange }: Mark
   const handleMarkdownChange = (newMarkdown: string) => {
     setMarkdown(newMarkdown);
     onContentChange(newMarkdown); // call the callback prop
+  };
+
+  // handle text selection for AI features
+  const handleTextSelection = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = textarea.value.substring(start, end);
+    setSelectedText(selected);
+  };
+
+  // handle AI text replacement
+  const handleAITextReplace = (newText: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const textBefore = textarea.value.substring(0, start);
+    const textAfter = textarea.value.substring(end);
+
+    const updatedMarkdown = `${textBefore}${newText}${textAfter}`;
+    handleMarkdownChange(updatedMarkdown);
+
+    // set cursor position after the new text
+    requestAnimationFrame(() => {
+      textarea.selectionStart = start + newText.length;
+      textarea.selectionEnd = start + newText.length;
+      textarea.focus();
+    });
+  };
+
+  // handle AI text insertion (for completion)
+  const handleAITextInsert = (newText: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const textBefore = textarea.value.substring(0, start);
+    const textAfter = textarea.value.substring(start);
+
+    const updatedMarkdown = `${textBefore}${newText}${textAfter}`;
+    handleMarkdownChange(updatedMarkdown);
+
+    // set cursor position after the new text
+    requestAnimationFrame(() => {
+      textarea.selectionStart = start + newText.length;
+      textarea.selectionEnd = start + newText.length;
+      textarea.focus();
+    });
   };
 
   // function to apply markdown syntax
@@ -475,6 +529,16 @@ export default function MarkdownEditor({ initialContent, onContentChange }: Mark
               </TooltipTrigger>
               <TooltipContent>Paragraph Break</TooltipContent>
             </Tooltip>
+
+            <Separator orientation="vertical" className="mx-1 h-8" />
+            
+            {/* AI Toolbar */}
+            <AIToolbar
+              selectedText={selectedText}
+              onTextReplace={handleAITextReplace}
+              onTextInsert={handleAITextInsert}
+              className="ml-2"
+            />
           </TooltipProvider>
         </div>
         
@@ -490,6 +554,8 @@ export default function MarkdownEditor({ initialContent, onContentChange }: Mark
                 value={markdown}
                 onChange={(e) => handleMarkdownChange(e.target.value)} 
                 onKeyDown={handleKeyDown}
+                onSelect={handleTextSelection}
+                onMouseUp={handleTextSelection}
                 placeholder="ayoo!"
               />
             </CardContent>
