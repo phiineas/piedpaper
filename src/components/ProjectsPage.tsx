@@ -31,7 +31,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-import { getProjects, updateProject, deleteProject, createProject } from '@/services/projectService';
+import { getProjects, updateProject, deleteProject, createProject, getProjectStats, ProjectLimitError, ProjectStats } from '@/services/projectService';
 import { IProject } from '@/models/project';
 import Navbar from './Navbar';
 import NewProjectModal from './NewProjectModal';
@@ -80,6 +80,7 @@ export default function ProjectsPage() {
   const [filterType, setFilterType] = useState<'all' | 'starred' | 'recent' | 'archived'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'recent' | 'name' | 'created'>('recent');
+  const [projectStats, setProjectStats] = useState<ProjectStats | null>(null);
   
   const router = useRouter();
 
@@ -101,8 +102,12 @@ export default function ProjectsPage() {
   async function fetchProjects() {
     try {
       setLoading(true);
-      const data = await getProjects();
-      setProjects(data);
+      const [projectsData, statsData] = await Promise.all([
+        getProjects(),
+        getProjectStats()
+      ]);
+      setProjects(projectsData);
+      setProjectStats(statsData);
     } catch (error) {
       console.error('error fetching projects-', error);
       toast.error("Failed to fetch projects. Please try again.");
@@ -176,6 +181,10 @@ export default function ProjectsPage() {
       await deleteProject(id);
       setProjects(projects.filter(p => p.id !== id));
       toast.success(`"${project.name}" has been deleted.`);
+      
+      // Refresh project stats
+      const updatedStats = await getProjectStats();
+      setProjectStats(updatedStats);
     } catch (error) {
       console.error('error deleting project-', error);
       toast.error("failed to delete project. please try again.");
@@ -197,10 +206,19 @@ export default function ProjectsPage() {
       setNewProjectDescription('');
       setShowNewProjectModal(false);
       toast.success("project created successfully!");
+      
+      // Refresh project stats
+      const updatedStats = await getProjectStats();
+      setProjectStats(updatedStats);
+      
       router.push(`/projects/${newProject.id}`);
     } catch (error) {
       console.error('error creating project-', error);
-      toast.error("failed to create project. please try again.");
+      if (error instanceof ProjectLimitError) {
+        toast.error(`Project limit reached! You can create up to ${error.maxProjects} projects.`);
+      } else {
+        toast.error("failed to create project. please try again.");
+      }
     } finally {
       setIsCreating(false);
     }
@@ -270,7 +288,7 @@ export default function ProjectsPage() {
               </div>
               
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4 lg:gap-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -281,6 +299,26 @@ export default function ProjectsPage() {
                     <div className="text-xs text-muted-foreground">Total Projects</div>
                   </Card>
                 </motion.div>
+                
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.35 }}
+                >
+                  <Card className={`p-4 text-center bg-gradient-to-br from-card to-card/50 border-primary/20 ${
+                    projectStats?.isAtLimit ? 'border-red-500/30' : 'border-blue-500/30'
+                  }`}>
+                    <div className={`text-2xl font-bold ${
+                      projectStats?.isAtLimit ? 'text-red-500' : 'text-blue-500'
+                    }`}>
+                      {projectStats?.remainingProjects ?? 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      of {projectStats?.maxProjects ?? 6} remaining
+                    </div>
+                  </Card>
+                </motion.div>
+
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -291,6 +329,7 @@ export default function ProjectsPage() {
                     <div className="text-xs text-muted-foreground">Starred</div>
                   </Card>
                 </motion.div>
+
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -399,13 +438,25 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* New Project Button */}
-                <Button 
-                  onClick={() => setShowNewProjectModal(true)}
-                  className="bg-gradient-to-r from-primary to-primary/80"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Project
-                </Button>
+                <div className="relative">
+                  <Button 
+                    onClick={() => setShowNewProjectModal(true)}
+                    disabled={projectStats?.isAtLimit}
+                    className={`bg-gradient-to-r transition-all ${
+                      projectStats?.isAtLimit 
+                        ? 'from-muted to-muted/80 text-muted-foreground cursor-not-allowed'
+                        : 'from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70'
+                    }`}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    {projectStats?.isAtLimit ? 'Project Limit Reached' : 'New Project'}
+                  </Button>
+                  {projectStats?.isAtLimit && (
+                    <div className="absolute top-full left-0 mt-2 p-2 bg-card border rounded-md shadow-md text-xs text-muted-foreground whitespace-nowrap z-10">
+                      You have reached the maximum of {projectStats.maxProjects} projects
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -462,15 +513,24 @@ export default function ProjectsPage() {
                         ? "No recent updates found."
                         : filterType === "archived"
                         ? "No archived projects found."
-                        : "Create your first project to get started!"}
+                        : `Create your first project to get started! You can create up to ${projectStats?.maxProjects ?? 6} projects.`}
                     </p>
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Button onClick={() => setShowNewProjectModal(true)} size="lg" className="bg-gradient-to-r from-primary to-primary/80">
+                      <Button 
+                        onClick={() => setShowNewProjectModal(true)} 
+                        disabled={projectStats?.isAtLimit}
+                        size="lg" 
+                        className={`bg-gradient-to-r transition-all ${
+                          projectStats?.isAtLimit 
+                            ? 'from-muted to-muted/80 text-muted-foreground cursor-not-allowed'
+                            : 'from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70'
+                        }`}
+                      >
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Project
+                        {projectStats?.isAtLimit ? 'Project Limit Reached' : 'Create Your First Project'}
                       </Button>
                     </motion.div>
                   </motion.div>
@@ -605,6 +665,8 @@ export default function ProjectsPage() {
         setProjectDescription={setNewProjectDescription}
         onCreateProject={handleCreateNewProject}
         isCreating={isCreating}
+        currentCount={projectStats?.currentCount}
+        maxProjects={projectStats?.maxProjects}
       />
     </div>
   );

@@ -8,6 +8,27 @@ export type ProjectInput = {
   starred?: boolean;
 };
 
+// type for project statistics
+export type ProjectStats = {
+  currentCount: number;
+  maxProjects: number;
+  remainingProjects: number;
+  canCreateMore: boolean;
+  isAtLimit: boolean;
+};
+
+// custom error for project limit
+export class ProjectLimitError extends Error {
+  constructor(
+    message: string,
+    public currentCount: number,
+    public maxProjects: number
+  ) {
+    super(message);
+    this.name = 'ProjectLimitError';
+  }
+}
+
 // get all projects
 export async function getProjects(): Promise<IProject[]> {
   const res = await fetch('/api/projects', {
@@ -47,6 +68,14 @@ export async function createProject(projectData: ProjectInput): Promise<IProject
   });
   
   if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    if (res.status === 400 && errorData.currentCount !== undefined) {
+      throw new ProjectLimitError(
+        errorData.error || 'Project limit reached',
+        errorData.currentCount,
+        errorData.maxProjects
+      );
+    }
     throw new Error('failed to create project');
   }
   
@@ -79,4 +108,17 @@ export async function deleteProject(id: string): Promise<void> {
   if (!res.ok) {
     throw new Error('failed to delete project');
   }
+}
+
+// get project statistics
+export async function getProjectStats(): Promise<ProjectStats> {
+  const res = await fetch('/api/projects/stats', {
+    cache: 'no-store',
+  });
+  
+  if (!res.ok) {
+    throw new Error('failed to fetch project stats');
+  }
+  
+  return res.json();
 }

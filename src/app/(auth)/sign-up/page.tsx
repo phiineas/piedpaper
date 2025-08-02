@@ -41,7 +41,7 @@ export default function SignUpPage() {
         });
 
         if (result?.ok) {
-          window.location.href = '/home';
+          window.location.href = '/sign-in';
         } else {
           toast.error("sign-up successful but sign-in failed. please try signing in.");
         }
@@ -108,7 +108,7 @@ export default function SignUpPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating account..." : "Sign Up"}
+              {isLoading ? "creating account ..." : "Sign Up"}
             </Button>
             
             <div className="relative">

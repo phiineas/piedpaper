@@ -17,6 +17,8 @@ interface NewProjectModalProps {
   setProjectDescription: (description: string) => void;
   onCreateProject: () => void;
   isCreating?: boolean;
+  currentCount?: number;
+  maxProjects?: number;
 }
 
 export default function NewProjectModal({
@@ -27,7 +29,9 @@ export default function NewProjectModal({
   projectDescription,
   setProjectDescription,
   onCreateProject,
-  isCreating = false
+  isCreating = false,
+  currentCount = 0,
+  maxProjects = 6
 }: NewProjectModalProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -95,6 +99,31 @@ export default function NewProjectModal({
                   <p className="text-sm text-muted-foreground mt-2">
                     Start your new markdown project and bring your ideas to life.
                   </p>
+                  {maxProjects && (
+                    <div className="mt-3 p-3 bg-muted/50 rounded-lg border">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Project Limit:</span>
+                        <span className={`font-medium ${
+                          currentCount >= maxProjects ? 'text-red-500' : 'text-blue-500'
+                        }`}>
+                          {currentCount} / {maxProjects}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${
+                            currentCount >= maxProjects ? 'bg-red-500' : 'bg-blue-500'
+                          }`}
+                          style={{ width: `${Math.min((currentCount / maxProjects) * 100, 100)}%` }}
+                        />
+                      </div>
+                      {currentCount >= maxProjects && (
+                        <p className="text-xs text-red-600 mt-2">
+                          You have reached the maximum number of projects allowed.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardHeader>
                 
                 <CardContent className="space-y-6">
