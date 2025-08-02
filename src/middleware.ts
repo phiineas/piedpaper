@@ -12,7 +12,6 @@ export async function middleware(request: NextRequest) {
   const isAuth = !!token;
   const isAuthPage = request.nextUrl.pathname.startsWith('/sign-in') || request.nextUrl.pathname.startsWith('/sign-up');
   const isLandingPage = request.nextUrl.pathname === '/';
-  const isVerifyEmailPage = request.nextUrl.pathname === '/verify-email';
 
   // debug logging - only in development
   if (process.env.NODE_ENV === 'development') {
@@ -25,8 +24,8 @@ export async function middleware(request: NextRequest) {
     });
   }
 
-  // allow access to landing page and email verification without authentication
-  if (isLandingPage || isVerifyEmailPage) {
+  // allow access to landing page without authentication
+  if (isLandingPage) {
     return NextResponse.next();
   }
 
